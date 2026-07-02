@@ -1,0 +1,44 @@
+# ---- Data (ADNI DUA prohibits redistribution) ----
+data/
+**/processed_mri_scans*/
+*.nii
+*.nii.gz
+*.npy
+*.csv
+*.tsv
+
+# ---- Model weights (large; may leak training data) ----
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# ---- Secrets / credentials ----
+.env
+*.env
+*credentials*
+*token*
+*.key
+service_account*.json
+
+# ---- Notebook cruft ----
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# ---- OS / IDE ----
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# ---- Allowed exceptions (safe metrics files) ----
+!results/verified_metrics.json

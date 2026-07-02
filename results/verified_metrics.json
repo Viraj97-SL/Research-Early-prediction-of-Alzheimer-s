@@ -1,0 +1,377 @@
+{
+  "verified": {
+    "C3b": {
+      "config": "CT-pretrained frozen, rebuilt brain preproc",
+      "acc": 0.931,
+      "mcc": 0.892,
+      "gmean": 0.914,
+      "auc": 0.982,
+      "mri_gate": 0.141,
+      "acc_ci": [
+        0.828,
+        1.0
+      ],
+      "mcc_ci": [
+        0.743,
+        1.0
+      ],
+      "gmean_ci": [
+        0.779,
+        1.0
+      ],
+      "auc_ci": [
+        0.936,
+        1.0
+      ],
+      "confusion_matrix": [
+        [
+          8,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          2
+        ],
+        [
+          0,
+          0,
+          15
+        ]
+      ],
+      "per_class": {
+        "CN": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 8
+        },
+        "MCI": {
+          "precision": 1.0,
+          "recall": 0.667,
+          "f1": 0.8,
+          "support": 6
+        },
+        "Dementia": {
+          "precision": 0.882,
+          "recall": 1.0,
+          "f1": 0.938,
+          "support": 15
+        }
+      },
+      "arch": "A_std",
+      "status": "verified"
+    },
+    "C4_MAE": {
+      "config": "in-domain MAE SSL, frozen",
+      "acc": 0.897,
+      "mcc": 0.84,
+      "gmean": 0.865,
+      "auc": 0.95,
+      "mri_gate": 0.053,
+      "acc_ci": [
+        0.759,
+        1.0
+      ],
+      "mcc_ci": [
+        0.667,
+        1.0
+      ],
+      "auc_ci": [
+        0.853,
+        1.0
+      ],
+      "confusion_matrix": [
+        [
+          8,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          15
+        ]
+      ],
+      "arch": "B_c4",
+      "status": "verified"
+    },
+    "C2b": {
+      "config": "CT-pretrained unfrozen, old preproc",
+      "acc": 0.862,
+      "mcc": 0.776,
+      "gmean": 0.838,
+      "auc": 0.957,
+      "mri_gate": 0.068,
+      "acc_ci": [
+        0.724,
+        0.966
+      ],
+      "mcc_ci": [
+        0.584,
+        0.944
+      ],
+      "auc_ci": [
+        0.888,
+        1.0
+      ],
+      "confusion_matrix": [
+        [
+          7,
+          1,
+          0
+        ],
+        [
+          0,
+          3,
+          3
+        ],
+        [
+          0,
+          0,
+          15
+        ]
+      ],
+      "arch": "A_std",
+      "status": "verified"
+    },
+    "C3c": {
+      "config": "CT-pretrained fine-tuned, brain preproc",
+      "acc": 0.862,
+      "mcc": 0.789,
+      "gmean": 0.808,
+      "auc": 0.941,
+      "mri_gate": 0.12,
+      "acc_ci": [
+        0.724,
+        0.966
+      ],
+      "mcc_ci": [
+        0.605,
+        0.942
+      ],
+      "auc_ci": [
+        0.832,
+        1.0
+      ],
+      "confusion_matrix": [
+        [
+          8,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          4
+        ],
+        [
+          0,
+          0,
+          15
+        ]
+      ],
+      "arch": "A_std",
+      "status": "verified"
+    },
+    "C4_VICReg": {
+      "config": "in-domain VICReg SSL, frozen",
+      "acc": 0.862,
+      "mcc": 0.774,
+      "gmean": 0.849,
+      "auc": 0.982,
+      "mri_gate": 0.052,
+      "acc_ci": [
+        0.724,
+        0.966
+      ],
+      "mcc_ci": [
+        0.552,
+        0.946
+      ],
+      "auc_ci": [
+        0.937,
+        1.0
+      ],
+      "confusion_matrix": [
+        [
+          8,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          3
+        ],
+        [
+          0,
+          1,
+          14
+        ]
+      ],
+      "arch": "B_c4",
+      "status": "verified"
+    },
+    "C6b": {
+      "config": "gentle forced-utilisation gate",
+      "acc": 0.793,
+      "mcc": 0.66,
+      "gmean": 0.754,
+      "auc": 0.935,
+      "mri_gate": 0.317,
+      "acc_ci": [
+        0.621,
+        0.931
+      ],
+      "mcc_ci": [
+        0.431,
+        0.883
+      ],
+      "auc_ci": [
+        0.828,
+        1.0
+      ],
+      "confusion_matrix": [
+        [
+          6,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          4
+        ],
+        [
+          0,
+          0,
+          15
+        ]
+      ],
+      "arch": "C_gate",
+      "status": "verified"
+    },
+    "C5": {
+      "config": "MAE + improved gate (dropout 0.3)",
+      "acc": 0.759,
+      "mcc": 0.601,
+      "gmean": 0.725,
+      "auc": 0.93,
+      "mri_gate": 0.131,
+      "acc_ci": [
+        0.586,
+        0.897
+      ],
+      "mcc_ci": [
+        0.365,
+        0.825
+      ],
+      "auc_ci": [
+        0.853,
+        0.987
+      ],
+      "confusion_matrix": [
+        [
+          5,
+          3,
+          0
+        ],
+        [
+          0,
+          2,
+          4
+        ],
+        [
+          0,
+          0,
+          15
+        ]
+      ],
+      "arch": "C_gate",
+      "status": "verified"
+    }
+  },
+  "logged_only": {
+    "C1": {
+      "config": "baseline (as-submitted)",
+      "acc": 0.897,
+      "mcc": 0.83,
+      "gmean": 0.898,
+      "mri_gate": 0.0,
+      "note": "imaging branch inert (gate 0.000)"
+    },
+    "C2": {
+      "config": "CT-pretrained frozen, old preproc",
+      "acc": 0.897,
+      "mcc": 0.83,
+      "gmean": 0.898,
+      "mri_gate": 0.105,
+      "note": "checkpoint overwritten; AUC/CI unavailable"
+    },
+    "C5_CV": {
+      "config": "MAE + CV-tuned gate (dropout 0)",
+      "acc": 0.897,
+      "mcc": 0.84,
+      "gmean": 0.865,
+      "mri_gate": 0.052,
+      "note": "checkpoint overwritten; CV sweep is the contribution"
+    },
+    "C6c": {
+      "config": "Optuna CV-tuned forced gate",
+      "acc": 0.862,
+      "mcc": 0.776,
+      "gmean": 0.857,
+      "mri_gate": 0.141,
+      "cv_acc_mean": 0.842,
+      "cv_acc_std": 0.045,
+      "note": "result.json preserved"
+    },
+    "C6": {
+      "config": "aggressive forced utilisation",
+      "acc": 0.276,
+      "mcc": 0.0,
+      "gmean": 0.0,
+      "note": "broken run (single-class collapse); excluded"
+    }
+  },
+  "headline_cv": {
+    "condition": "C3b",
+    "folds": 5,
+    "acc": [
+      0.841,
+      0.046
+    ],
+    "mcc": [
+      0.752,
+      0.076
+    ],
+    "gmean": [
+      0.862,
+      0.038
+    ],
+    "auc": [
+      0.888,
+      0.045
+    ]
+  },
+  "cohort": {
+    "source": "ADNI",
+    "N": 187,
+    "train": 130,
+    "val": 28,
+    "test": 29,
+    "classes": [
+      "CN",
+      "MCI",
+      "Dementia"
+    ]
+  },
+  "verification_policy": "A metric is 'verified' only if the reloaded model reproduced its logged accuracy within |delta_acc|<0.02. Non-reproducing checkpoints reported from run log with AUC/CI marked unavailable."
+}
