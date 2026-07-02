@@ -1,158 +1,103 @@
------
+# Modality Present Is Not Modality Used
 
-# 🧠 A Synergistic Tri-Modal Framework for Early Alzheimer's Diagnosis
+**Gate-weight auditing and the recovery of a silently collapsed imaging branch in tri-modal Alzheimer's disease classification.**
 
-**Repository:** `Viraj97-SL/Research-Early-prediction-of-Alzheimer-s`  
-**Author:** Viraj Bulugahapitiya  
-**Status:** MSc Data Science Project (Complete)
+A tri-modal deep-learning framework for Alzheimer's disease (AD) classification that fuses structural MRI, longitudinal clinical cognitive scores, and biomarker sequences — and a methodology for *auditing* whether each modality is genuinely used rather than merely present. This repository documents Phase 2: the diagnosis of a silent imaging-branch collapse, its recovery, and a controlled eight-condition study establishing the limits of imaging contribution at small sample size.
 
------
+> **Data note:** This repository contains **no patient data and no trained model weights.** All experiments use the [ADNI](https://adni.loni.usc.edu/) cohort, whose data-use agreement prohibits redistribution. Data must be obtained directly from ADNI. Paths in notebooks are placeholders.
 
-## Overview
+---
 
-This repository contains the complete code and final report for the MSc Data Science project titled, "**A Synergistic Tri-Modal Framework for Alzheimer's Disease Diagnosis Using Self-Supervised 3D Swin Transformer and LSTM with Gated Fusion**".
+## TL;DR
 
-The diagnosis of Alzheimer's Disease (AD) using deep learning is often hampered by the dual challenges of **data scarcity** and **severe class imbalance**, which can lead to model collapse. This project proposes a novel, synergistic tri-modal framework designed to overcome these limitations.
+A tri-modal AD classifier reached **89.7%** accuracy — but a gate-weight audit revealed the MRI branch was **completely inert**: the fusion gate assigned it zero weight, and removing MRI changed no test metric. The "multimodal" model was a clinical-feature classifier in disguise.
 
-The framework integrates three distinct data modalities from a challenging **Alzheimer's Disease Neuroimaging Initiative (ADNI)** cohort of 187 subjects:
+We traced the collapse to two causes (degenerate MRI preprocessing + a collapsed self-supervised encoder), rebuilt the pipeline, and recovered a genuinely tri-modal model at **93.1%** accuracy (AUC 0.982) where MRI measurably contributes. We then mapped, across eight controlled conditions, the narrow regime in which the imaging branch is viable at N=187.
 
-1.  **3D MRI Scans**
-2.  **Longitudinal Clinical Data**
-3.  **Biomarker Sequences**
+**Core contribution:** gate-weight auditing distinguishes *modality present* from *modality used* — a distinction invisible to aggregate accuracy, and a necessary check for small-cohort multimodal medical models.
 
-The architecture combines a **3D Swin Transformer** (pre-trained using a self-supervised contrastive learning strategy) with **dual Long Short-Term Memory (LSTM)** networks. A key innovation is a **dynamic gated fusion mechanism** that adaptively weighs the contribution of each modality to create a synergistic, patient-specific representation.
+---
 
-Evaluated on a three-class problem (Cognitively Normal, Mild Cognitive Impairment, and Dementia), the model demonstrates highly balanced and robust performance, successfully classifying the underrepresented classes where unimodal baselines failed.
+## Key results (verified)
 
-## 🎯 The Challenge
+| Condition | Configuration | Acc | MCC | G-mean | AUC | MRI gate |
+|---|---|---|---|---|---|---|
+| **C3b** | CT-pretrained frozen + rebuilt preprocessing | **0.931** | **0.892** | **0.914** | **0.982** | **0.141** |
+| C4-MAE | in-domain MAE SSL, frozen | 0.897 | 0.840 | 0.865 | 0.950 | 0.053 |
+| C2b | CT-pretrained unfrozen, old preprocessing | 0.862 | 0.776 | 0.838 | 0.957 | 0.068 |
+| C3c | CT-pretrained fine-tuned | 0.862 | 0.789 | 0.808 | 0.941 | 0.120 |
+| C4-VICReg | in-domain VICReg SSL, frozen | 0.862 | 0.774 | 0.849 | 0.982 | 0.052 |
+| C6b | gentle forced-utilisation gate | 0.793 | 0.660 | 0.754 | 0.935 | 0.317 |
+| C5 | MAE + improved gate (dropout 0.3) | 0.759 | 0.601 | 0.725 | 0.930 | 0.131 |
 
-The primary hurdles in developing computational AD diagnostics are:
+Metrics from held-out test (n=29); every row verified by reloading the saved model and reproducing its logged accuracy. See [`results/RESULTS.md`](results/RESULTS.md) for confidence intervals, cross-validation, and conditions reported from the run log. **Headline C3b, 5-fold CV:** accuracy 0.841 ± 0.046, AUC 0.888 ± 0.045.
 
-  * **The "Small Data" Conundrum:** Medical datasets are expensive and difficult to acquire. This project operates in a low-data regime (N=187), which makes data-hungry models like Transformers prone to overfitting or model collapse.
-  * **Severe Class Imbalance:** In clinical datasets, "healthy" classes often vastly outnumber "diseased" classes. This biases models, leading to poor performance on the minority classes (MCI and Dementia) that are of the highest clinical interest.
-  * **Sub-optimal Fusion:** Many multimodal models use simple feature concatenation or averaging. These static methods fail to account for the varying quality or relevance of different data types for a specific patient.
+---
 
-## 🛠️ Proposed Framework & Methodology
+## The story in one figure's worth of words
 
-To address these challenges, this project implements a two-stage, tri-modal framework.
+1. **Baseline looks fine, is broken.** 89.7% accuracy; MRI gate weight ≈ 0; zeroing MRI changes nothing. Silent collapse.
+2. **Two causes, separated.** Degenerate preprocessing (whole-head volumes, unharmonised intensities) → constant-output collapse. A from-scratch self-supervised encoder → collapsed features.
+3. **Recovery.** Skull-strip + affine-to-MNI + brain-masked z-score, with a frozen CT-pretrained encoder → 93.1%, MRI genuinely used (C3b).
+4. **The ceiling.** Fine-tuning overfits (C3c); in-domain SSL learns richer features (linear-probe 0.41 vs 0.28) but can't be exploited at N=187 (C4); forced utilisation raises the gate on one split (C6b, gate 0.317) but does not survive cross-validation (C6c → gate ≈ 0.14). Large-scale transfer wins for stability.
 
-### Model Architecture
+---
 
-The core architecture, detailed in `Tri_Model_Inititative1_2.ipynb`, consists of three parallel pathways integrated by a smart fusion module (Cell 3):
+## Method: the gate-weight auditing protocol
 
-1.  **Neuroimaging Pathway (3D Swin Transformer):**
+Four diagnostics, applied identically to every condition on the held-out set:
 
-      * Processes 3D MRI volumes (96x96x96).
-      * Uses a **3D Swin Transformer** backbone to efficiently capture both local and global spatial dependencies in the brain, which is critical for identifying diffuse pathological changes.
-      * The backbone is first pre-trained using **Self-Supervised Learning (SSL)** to learn robust representations of brain anatomy before seeing any labels.
+- **Mean gate weights** — the fusion gate's average per-modality allocation. Near-zero = a modality the model ignores.
+- **Leave-one-modality-out ablation** — zero each modality; if metrics don't move, it's functionally inert regardless of nominal weight.
+- **Image-feature similarity** — std of pairwise cosine similarity among image embeddings; near-zero std = representational collapse.
+- **Image-only linear probe** — accuracy of a linear classifier on frozen image features (chance = 0.33); reveals class-discriminative structure independent of whether the gate exploits it.
 
-2.  **Sequential Pathways (Dual LSTMs):**
+These separate four states that accuracy conflates: *absent from the gate*, *present but unused*, *collapsed*, and *informative-but-unexploited*.
 
-      * Two parallel **LSTM** networks process the temporal data streams.
-      * **LSTM 1:** Models longitudinal clinical data (e.g., MMSE, FAQ, ADAS13 scores over time).
-      * **LSTM 2:** Models longitudinal biomarker data.
+See [`docs/methodology.md`](docs/methodology.md) for the full pipeline, architecture, and experimental design.
 
-3.  **Synergistic Gated Fusion:**
+---
 
-      * Instead of simple concatenation, a **dynamic gated fusion mechanism** is used.
-      * This small neural network learns to assign adaptive weights to the features from all three pathways, effectively deciding how much to "trust" the MRI vs. clinical vs. biomarker data for each individual patient's diagnosis.
-      * The weighted features are then combined into a single representation for the final classification head (Dense + Softmax layers).
+## Repository structure
 
-### Training Methodology
-
-The model is trained in two distinct stages to maximize learning from the small, imbalanced dataset.
-
-**Stage 1: Self-Supervised Pre-training**
-
-  * **Notebook:** `Stage01_Self_Supervised_Learning.ipynb`
-  * **Goal:** To overcome data scarcity, the 3D Swin Transformer backbone is first pre-trained on all 187 MRI scans *without* labels.
-  * **Method:** A **contrastive learning** (SimCLR-style) approach is used. The model learns to identify different augmented "views" of the same brain scan, forcing it to learn meaningful anatomical features. This is implemented using `NTXentLoss` (Cell 3, `Stage01_Self_Supervised_Learning.ipynb`).
-  * **Output:** The pre-trained backbone weights (`contrastive_pretrain_backbone_final.pth`), which serve as a powerful feature extractor for the downstream task [Cell 3, `Stage01_Self_Supervised_Learning.ipynb`].
-
-**Stage 2: Supervised Fine-Tuning**
-
-  * **Notebook:** `Tri_Model_Inititative1_2.ipynb`
-  * **Goal:** To train the final diagnostic classifier.
-  * **Method:** The Swin Transformer backbone is frozen, and its weights are loaded [Cell 5 output]. The dual LSTMs and the gated fusion/classifier heads are then trained jointly on the labeled training split (Cell 5 output).
-  * **Loss Function:** To combat class imbalance, a **class-weighted Cross-Entropy Loss** is used, which applies a higher penalty for misclassifying samples from the minority classes (MCI and Dementia).
-
-## 📊 Dataset
-
-  * **Source:** Alzheimer's Disease Neuroimaging Initiative (ADNI).
-  * **Cohort:** A challenging, realistic cohort of **187 subjects**.
-  * **Classes:** 3-class classification: **Cognitively Normal (CN)**, **Mild Cognitive Impairment (MCI)**, and **Dementia**.
-  * **Modalities:**
-    1.  **Neuroimaging:** 3D T1-weighted MRI scans, preprocessed, normalized, and resized to 96x96x96.
-    2.  **Clinical Data:** Longitudinal sequences of 10 features, including AGE, APOE4, MMSE, ADAS13, RAVLT, and FAQ scores.
-    3.  **Biomarker Data:** Longitudinal sequences of 3 key biomarkers.
-
-## 📈 Key Results
-
-The final tri-modal framework with SSL and gated fusion demonstrated robust and highly balanced performance on the unseen test set, especially when compared to baseline models. The reliance on **Matthews Correlation Coefficient (MCC)** and **Geometric Mean (G-Mean)** as primary metrics (in addition to Accuracy and AUC) ensures the model is not simply ignoring the underrepresented MCI and Dementia classes.
-
-**Overall Performance on Test Set**
-| Metric | Score |
-| :--- | :--- |
-| **Accuracy** | 0.8966 |
-| **AUC-ROC (weighted)** | 0.9611 |
-| **Matthews Correlation Coefficient (MCC)** | 0.8337 |
-| **Geometric Mean (G-Mean)** | 0.9129 |
-
-**Per-Class Performance on Test Set**
-| Class | Precision | Recall | F1-Score | Support |
-| :--- | :--- | :--- | :--- | :--- |
-| **CN** | 1.00 | 0.88 | 0.93 | 8 |
-| **MCI** | 0.71 | 0.83 | 0.77 | 6 |
-| **Dementia**| 0.93 | 0.93 | 0.93 | 15 |
-| **Macro Avg**| 0.88 | 0.88 | 0.88 | 29 |
-
-An ablation study confirmed that unimodal models trained on this dataset suffered from **complete model collapse** (MCC and G-Mean scores of 0), validating the necessity of the proposed synergistic, self-supervised, tri-modal approach.
-
-## 🚀 How to Use
-
-### 1\. Setup
-
-Ensure you have a Python environment with GPU support (CUDA). The primary dependencies can be installed via pip:
-
-```bash
-pip install pandas nibabel torch torchvision monai torchio antspyx==0.4.2 imbalanced-learn
+```
+.
+├── README.md
+├── requirements.txt
+├── notebooks/            # experiment & evaluation notebooks (Drive paths are placeholders)
+├── results/
+│   ├── RESULTS.md         # full verified table, CIs, cross-validation, provenance
+│   └── verified_metrics.json
+└── docs/
+    └── methodology.md     # cohort, preprocessing, architecture, auditing protocol
 ```
 
-(from Cell 1 in both notebooks)
+## Prior work (Phase 1)
 
-### 2\. Data Preparation
+The directories below are the original MSc project deliverables. They are kept as-is, physically separate from the Phase 2 work described above:
 
-The included notebooks assume that the raw ADNI data (NIfTI files and CSVs) has already been preprocessed and saved in the following formats in the `results/` directory:
+- `Basic 3D CNN model/` — early unimodal 3D CNN / ResNet18 ensemble baselines.
+- `Multimodel/` — preprocessing scripts for the CNN/ResNet and Swin Transformer pipelines.
+- `Preprocessing stage 1/` — initial EDA/preprocessing notebook.
+- `Proposed Tri Modal Framework with Advanced Gated Fusion/` — first tri-modal framework iteration.
+- `Proposed framework of Self Supervised Swin Transformer and LSTM with Cross Modal Attention/` — cross-modal attention variant.
+- `Tri Modal Initiative with MAE pretraining and Gated Fusion/` — MAE-pretraining variant that Phase 2's recovery work builds on.
+- `EDA_of_ADNI_Clinical_data.ipynb` — original clinical-data exploratory analysis.
 
-  * **MRI Scans:** Saved as individual `.npy` files (one per patient) after registration, normalization, and resizing to 96x96x96. Directory: `results/processed_mri_scans_swin/` (Cell 2, `Stage01_Self_Supervised_Learning.ipynb`).
-  * **Clinical Data:** A single `project_data_cleaned.csv` file with imputed missing values (Cell 2, `Tri_Model_Inititative1_2.ipynb`).
-  * **Biomarker Data:** Saved as a `.npy` dictionary (`preprocessed_biomarker_sequences.npy`) mapping patient IDs to padded tensors (Cell 2, `Tri_Model_Inititative1_2.ipynb`).
-  * **Data Splits:** A single `.npz` file (`patient_id_splits.npz`) containing the patient IDs and labels for the training, validation, and test sets (Cell 2, both notebooks).
+> **Known issue, flagged for a future cleanup pass:** some Phase 1 scripts still contain generic `/content/drive/...` Colab path placeholders from initial development (no email addresses, credentials, or patient data were found in a repo-wide scan). Sanitizing these requires rewriting already-published git history and is intentionally out of scope for this Phase 2 branch — it needs a separate, explicit sign-off before any history rewrite.
 
-### 3\. Stage 1: Self-Supervised Pre-training
+## Reproducing
 
-To generate the pre-trained 3D Swin Transformer backbone:
+Data is not included. To reproduce: obtain the ADNI cohort, preprocess per [`docs/methodology.md`](docs/methodology.md) §Preprocessing, set the data-root placeholder in the notebooks, and run the condition notebooks in `notebooks/`. Environment: see [`requirements.txt`](requirements.txt) (note: `monai==1.5.0`; do not pin numpy).
 
-1.  Ensure your preprocessed MRI `.npy` files are in the correct directory.
-2.  Run **`Stage01_Self_Supervised_Learning.ipynb`**.
-3.  This will save the backbone weights as `contrastive_pretrain_backbone_final.pth` in your `results/` directory (Cell 3, `Stage01_Self_Supervised_Learning.ipynb`).
+## Limitations
 
-### 4\. Stage 2: Supervised Tri-Modal Training
+The test set is small (n=29); point estimates carry wide confidence intervals (headline accuracy CI [0.83, 1.00]). Cross-validation supports model selection but does not enlarge the test set. Findings on the imaging-contribution ceiling are specific to this cohort size.
 
-To train and evaluate the final model:
+## Citation
 
-1.  Ensure all preprocessed data files and the `contrastive_pretrain_backbone_final.pth` file are in the `results/` directory.
-2.  Run **`Tri_Model_Inititative1_2.ipynb`**.
-3.  The script will:
-      * Load all three data modalities (Cell 2).
-      * Define the tri-modal architecture (Cell 3).
-      * Train the model, saving the best-performing version (based on validation accuracy) as `advanced_multimodal_model.pth` (Cell 5 output).
-      * Finally, it will load this best model and run a full evaluation on the unseen test set, printing the final performance reports and confusion matrix (Cell 13 output).
+If this work is useful, please cite the associated paper (in preparation). Framework and auditing protocol © the authors; ADNI data © the Alzheimer's Disease Neuroimaging Initiative, used under its data-use agreement.
 
-## 📜 Citation
+## License
 
-If you use this work, please cite the MSc thesis:
-
-Bulugahapitiya, V. (2025). *A Synergistic Tri-Modal Framework for Alzheimer's Disease Diagnosis Using Self-Supervised 3D Swin Transformer and LSTM with Gated Fusion*. MSc Data Science Project Report, University of Hertfordshire.
-
------
+Code released under the MIT License (see `LICENSE`). This license applies to the code only, not to any ADNI-derived data.
