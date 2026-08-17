@@ -4,7 +4,9 @@ Full description of the cohort, preprocessing, architecture, auditing protocol, 
 
 ## Cohort
 
-Data from the [Alzheimer's Disease Neuroimaging Initiative (ADNI)](https://adni.loni.usc.edu/). Curated cohort: **N = 187** subjects, three diagnostic classes — cognitively normal (CN, ~32%), mild cognitive impairment (MCI, ~44%), dementia (~24%). The class imbalance (dementia under-represented) motivates imbalance-aware evaluation.
+Data from the [Alzheimer's Disease Neuroimaging Initiative (ADNI)](https://adni.loni.usc.edu/). Curated cohort: **N = 187** subjects, three diagnostic classes — cognitively normal (CN, 26.7%, n=50), mild cognitive impairment (MCI, 23.0%, n=43), dementia (50.3%, n=94). Labels reflect each subject's most recent recorded diagnosis across follow-up. The class imbalance (dementia is the majority class, MCI the smallest) motivates imbalance-aware evaluation.
+
+![Class distribution](../figures/class_distribution.png)
 
 Partitioned at the **patient level** (all of a subject's data in one split) by stratified sampling: **train 130 / validation 28 / test 29**, preserving class proportions and preventing leakage.
 

@@ -19,3 +19,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+**Data carve-out.** This license applies only to the source code, documentation,
+and derived experimental artefacts (metrics, configs, figures) in this
+repository. It does not apply to, and confers no rights over, any data from
+the Alzheimer's Disease Neuroimaging Initiative (ADNI). ADNI data is subject
+to its own Data Use Agreement (https://adni.loni.usc.edu/), which prohibits
+redistribution; no ADNI-derived patient data or trained model weights are
+included in or distributed with this repository.
