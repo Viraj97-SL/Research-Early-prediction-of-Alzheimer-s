@@ -20,17 +20,68 @@ We traced the collapse to two causes (degenerate MRI preprocessing + a collapsed
 
 ## Key results (verified)
 
-| Condition | Configuration | Acc | MCC | G-mean | AUC | MRI gate |
-|---|---|---|---|---|---|---|
-| **C3b** | CT-pretrained frozen + rebuilt preprocessing | **0.931** | **0.892** | **0.914** | **0.982** | **0.141** |
-| C4-MAE | in-domain MAE SSL, frozen | 0.897 | 0.840 | 0.865 | 0.950 | 0.053 |
-| C2b | CT-pretrained unfrozen, old preprocessing | 0.862 | 0.776 | 0.838 | 0.957 | 0.068 |
-| C3c | CT-pretrained fine-tuned | 0.862 | 0.789 | 0.808 | 0.941 | 0.120 |
-| C4-VICReg | in-domain VICReg SSL, frozen | 0.862 | 0.774 | 0.849 | 0.982 | 0.052 |
-| C6b | gentle forced-utilisation gate | 0.793 | 0.660 | 0.754 | 0.935 | 0.317 |
-| C5 | MAE + improved gate (dropout 0.3) | 0.759 | 0.601 | 0.725 | 0.930 | 0.131 |
+| Condition | Configuration | Acc | Acc 95% CI | MCC | G-mean | AUC | MRI gate |
+|---|---|---|---|---|---|---|---|
+| **C3b** | CT-pretrained frozen + rebuilt preprocessing | **0.931** | **[0.828, 1.000]** | **0.892** | **0.914** | **0.982** | **0.141** |
+| C4-MAE | in-domain MAE SSL, frozen | 0.897 | [0.759, 1.000] | 0.840 | 0.865 | 0.950 | 0.053 |
+| C2b | CT-pretrained unfrozen, old preprocessing | 0.862 | [0.724, 0.966] | 0.776 | 0.838 | 0.957 | 0.068 |
+| C3c | CT-pretrained fine-tuned | 0.862 | [0.724, 0.966] | 0.789 | 0.808 | 0.941 | 0.120 |
+| C4-VICReg | in-domain VICReg SSL, frozen | 0.862 | [0.724, 0.966] | 0.774 | 0.849 | 0.982 | 0.052 |
+| C6b | gentle forced-utilisation gate | 0.793 | [0.621, 0.931] | 0.660 | 0.754 | 0.935 | 0.317 |
+| C5 | MAE + improved gate (dropout 0.3) | 0.759 | [0.586, 0.897] | 0.601 | 0.725 | 0.930 | 0.131 |
 
-Metrics from held-out test (n=29); every row verified by reloading the saved model and reproducing its logged accuracy. See [`results/RESULTS.md`](results/RESULTS.md) for confidence intervals, cross-validation, and conditions reported from the run log. **Headline C3b, 5-fold CV:** accuracy 0.841 ± 0.046, AUC 0.888 ± 0.045.
+Metrics from held-out test (n=29); every row verified by reloading the saved model and reproducing its logged accuracy. CIs are bootstrap 95% (2,000 resamples). See [`results/RESULTS.md`](results/RESULTS.md) for MCC/AUC CIs, cross-validation, and conditions reported from the run log. **Headline C3b, 5-fold CV:** accuracy 0.841 ± 0.046, MCC 0.752 ± 0.076, G-mean 0.862 ± 0.038, AUC 0.888 ± 0.045.
+
+---
+
+## Figures
+
+<table>
+<tr>
+<td width="50%">
+
+![Tri-modal architecture](figures/architecture_diagram.png)
+**Fig. 1 — Architecture.** MRI → 3D Swin Transformer; clinical and biomarker sequences → separate LSTMs; all three feed an audited, LayerNorm + softmax gated-fusion head.
+
+</td>
+<td width="50%">
+
+![Class distribution](figures/class_distribution.png)
+**Fig. 2 — Class distribution (N=187).** Dementia is the majority class (50.3%); MCI the smallest (23.0%) — motivates the imbalance-aware metrics used throughout.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+![Initial audit panel](figures/initial_audit_panel.png)
+**Fig. 3 — Initial audit.** Baseline C1's fusion gate assigns MRI a weight of 0.000, and zeroing the MRI input changes no test metric — a silent, complete collapse invisible to accuracy alone. C3b (rebuilt preprocessing) recovers a non-zero gate weight (0.141) and genuine ablation sensitivity.
+
+</td>
+<td width="50%">
+
+![Condition comparison](figures/condition_comparison.png)
+**Fig. 4 — Eight-condition comparison.** Test accuracy (bars) against mean MRI gate weight (red line) across every condition. C3b is the accuracy and audit-both-positive optimum; several high-accuracy bars (C1, C2, C5-CV, C6) sit on an inert or near-inert imaging branch.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+![Probe vs gate dissociation](figures/probe_vs_gate_dissociation.png)
+**Fig. 5 — Probe-vs-gate dissociation.** In-domain self-supervision (MAE, VICReg) learns more class-discriminative image features (linear-probe accuracy, y-axis) than large-scale CT transfer, yet the fusion gate does not weight those features more (x-axis) — informative features that the fusion model does not exploit.
+
+</td>
+<td width="50%">
+
+![Confusion matrix](figures/confusion_matrix.png)
+**Fig. 6 — Confusion matrix (C3b, n=29).** All errors sit on the MCI/Dementia boundary (2 of 6 MCI subjects predicted as Dementia); CN and Dementia are perfectly classified.
+
+</td>
+</tr>
+</table>
+
+> **Pending:** MRI preprocessing before/after slices (original whole-head volumes vs. skull-stripped, MNI-registered, brain-masked outputs) are not yet included — these require exporting real (de-identified, ADNI-derived) scan slices, which is being sourced separately. The six figures above are all generated directly from [`results/verified_metrics.json`](results/verified_metrics.json) and the paper text; none contain patient imagery.
 
 ---
 
@@ -63,11 +114,13 @@ See [`docs/methodology.md`](docs/methodology.md) for the full pipeline, architec
 ```
 .
 ├── README.md
+├── LICENSE                # MIT, with an ADNI data carve-out note
 ├── requirements.txt
 ├── notebooks/            # experiment & evaluation notebooks (Drive paths are placeholders)
 ├── results/
 │   ├── RESULTS.md         # full verified table, CIs, cross-validation, provenance
 │   └── verified_metrics.json
+├── figures/              # paper figures, generated from verified_metrics.json (no patient data)
 └── docs/
     └── methodology.md     # cohort, preprocessing, architecture, auditing protocol
 ```
