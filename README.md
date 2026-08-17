@@ -36,34 +36,57 @@ Metrics from held-out test (n=29); every row verified by reloading the saved mod
 
 ## Figures
 
-![Tri-modal architecture](figures/architecture_diagram.png)
-**Fig. 1 — Architecture.** MRI → 3D Swin Transformer (SwinViT, frozen or fine-tuned); clinical and biomarker sequences → separate 2-layer LSTMs. Each 128-d modality feature is LayerNorm'd, then combined by a temperature-scaled softmax gate, `w = softmax(g([f_I, f_C, f_B]) / τ)`. The gate weights `w` are the primary object of the auditing protocol (bottom right).
-
-![Class distribution](figures/class_distribution.png)
-**Fig. 2 — Class distribution (N=187).** Dementia is the majority class (50.3%, n=94); MCI the smallest (23.0%, n=43) — motivates the imbalance-aware metrics (MCC, G-mean) used throughout.
-
-![MRI preprocessing, before vs. after](figures/mri_preprocessing_before_after.png)
-**Fig. 3 — Preprocessing rebuild.** Original pipeline (top: whole-head volumes, min-max scaled) vs. rebuilt pipeline (bottom: skull-stripped with HD-BET, affine-registered to MNI, brain-masked z-scored), shown in all three planes.
-
-![Cross-subject intensity consistency](figures/preprocessing_intensity_consistency.png)
-**Fig. 3b — Why the rebuild matters.** Bright-voxel fraction per subject: wildly inconsistent under the original pipeline (0.20–1.00) vs. tightly harmonised under the rebuilt one — the input instability that fed the imaging encoder's collapse.
-
-![Initial audit panel](figures/initial_audit_panel.png)
-**Fig. 4 — Initial audit (baseline C1).** (a) Learned gate weights: MRI 0.000, Clinical 1.000, Biomarker 0.000 — the imaging branch receives no weight at all. (b) Leave-one-modality-out ablation: zeroing MRI leaves accuracy unchanged (0.897 → 0.897); zeroing Clinical collapses it (→ 0.207). The imaging branch is present but functionally inert, invisible to accuracy alone.
-
-![Preprocessing recovery](figures/preprocessing_recovery.png)
-**Fig. 5 — Recovery.** (a) Image-feature similarity SD: 0.0007 (old preprocessing, collapsed/near-constant features) vs. 0.0440 (rebuilt, de-collapsed). (b) Resulting MRI gate weight rises from 0.105 to 0.141 — the rebuilt pipeline is what restores a genuinely contributing imaging branch.
-
-![Probe vs gate dissociation](figures/probe_vs_gate_dissociation.png)
-**Fig. 6 — Probe-vs-gate dissociation.** In-domain self-supervision (C4-MAE: probe 0.41, C4-VICReg: probe 0.34) learns more class-discriminative image features than CT transfer (C2/C3b: probe 0.28, both above chance at 0.33) — yet the fusion gate weights transfer features *more* (0.11–0.14) than the richer in-domain features (0.05). Representation quality and fused contribution dissociate.
-
-![Eight-condition comparison](figures/condition_comparison.png)
-**Fig. 7 — Full condition sweep.** (a) MRI gate weight and (b) full-model accuracy across all 12 conditions; (c) accuracy drop when MRI is zeroed (the direct measure of imaging contribution) and (d) image-only linear-probe accuracy. C3b (green) is the only condition that is simultaneously high-accuracy, audit-positive, and CV-stable; C1 (grey) is the inert baseline; red bars mark conditions with an imaging-inert or unstable gate.
-
-![Confusion matrix](figures/confusion_matrix.png)
-**Fig. 8 — Confusion matrix (C3b, n=29).** All errors sit on the MCI/Dementia boundary (2 of 6 MCI subjects predicted as Dementia); CN and Dementia are perfectly classified.
-
 All figures are generated directly from [`results/verified_metrics.json`](results/verified_metrics.json) and the study's own diagnostic outputs. Fig. 3 shows de-identified, ADNI-derived MRI slices used solely to illustrate the preprocessing pipeline; no raw scan volumes, patient identifiers, or model weights are included in this repository.
+
+### 1 · Model and cohort
+
+<p align="center"><img src="figures/architecture_diagram.png" width="420" alt="Tri-modal architecture"><br><sub><b>Fig. 1 — Architecture.</b></sub></p>
+
+MRI → 3D Swin Transformer (SwinViT, frozen or fine-tuned); clinical and biomarker sequences → separate 2-layer LSTMs. Each 128-d modality feature is LayerNorm'd, then combined by a temperature-scaled softmax gate, `w = softmax(g([f_I, f_C, f_B]) / τ)`. The gate weights `w` are the primary object of the auditing protocol.
+
+<p align="center"><img src="figures/class_distribution.png" width="420" alt="Class distribution"><br><sub><b>Fig. 2 — Class distribution (N=187).</b></sub></p>
+
+Dementia is the majority class (50.3%, n=94); MCI the smallest (23.0%, n=43) — motivates the imbalance-aware metrics (MCC, G-mean) used throughout.
+
+---
+
+### 2 · Preprocessing rebuild
+
+<p align="center"><img src="figures/mri_preprocessing_before_after.png" width="600" alt="MRI preprocessing, before vs. after"><br><sub><b>Fig. 3 — Original vs. rebuilt preprocessing.</b></sub></p>
+
+Original pipeline (top: whole-head volumes, min-max scaled) vs. rebuilt pipeline (bottom: skull-stripped with HD-BET, affine-registered to MNI, brain-masked z-scored), shown in all three planes.
+
+<p align="center"><img src="figures/preprocessing_intensity_consistency.png" width="420" alt="Cross-subject intensity consistency"><br><sub><b>Fig. 3b — Why the rebuild matters.</b></sub></p>
+
+Bright-voxel fraction per subject: wildly inconsistent under the original pipeline (0.20–1.00) vs. tightly harmonised under the rebuilt one — the input instability that fed the imaging encoder's collapse.
+
+---
+
+### 3 · The audit: collapse and recovery
+
+<p align="center"><img src="figures/initial_audit_panel.png" width="700" alt="Initial audit panel"><br><sub><b>Fig. 4 — Initial audit (baseline C1).</b></sub></p>
+
+(a) Learned gate weights: MRI 0.000, Clinical 1.000, Biomarker 0.000 — the imaging branch receives no weight at all. (b) Leave-one-modality-out ablation: zeroing MRI leaves accuracy unchanged (0.897 → 0.897); zeroing Clinical collapses it (→ 0.207). The imaging branch is present but functionally inert, invisible to accuracy alone.
+
+<p align="center"><img src="figures/preprocessing_recovery.png" width="620" alt="Preprocessing recovery"><br><sub><b>Fig. 5 — Recovery.</b></sub></p>
+
+(a) Image-feature similarity SD: 0.0007 (old preprocessing, collapsed/near-constant features) vs. 0.0440 (rebuilt, de-collapsed). (b) Resulting MRI gate weight rises from 0.105 to 0.141 — the rebuilt pipeline is what restores a genuinely contributing imaging branch.
+
+---
+
+### 4 · Cross-condition results
+
+<p align="center"><img src="figures/probe_vs_gate_dissociation.png" width="480" alt="Probe vs gate dissociation"><br><sub><b>Fig. 6 — Probe-vs-gate dissociation.</b></sub></p>
+
+In-domain self-supervision (C4-MAE: probe 0.41, C4-VICReg: probe 0.34) learns more class-discriminative image features than CT transfer (C2/C3b: probe 0.28, both above chance at 0.33) — yet the fusion gate weights transfer features *more* (0.11–0.14) than the richer in-domain features (0.05). Representation quality and fused contribution dissociate.
+
+<p align="center"><img src="figures/condition_comparison.png" width="700" alt="Eight-condition comparison"><br><sub><b>Fig. 7 — Full condition sweep.</b></sub></p>
+
+(a) MRI gate weight and (b) full-model accuracy across all 12 conditions; (c) accuracy drop when MRI is zeroed (the direct measure of imaging contribution) and (d) image-only linear-probe accuracy. C3b (green) is the only condition that is simultaneously high-accuracy, audit-positive, and CV-stable; C1 (grey) is the inert baseline; red bars mark conditions with an imaging-inert or unstable gate.
+
+<p align="center"><img src="figures/confusion_matrix.png" width="420" alt="Confusion matrix"><br><sub><b>Fig. 8 — Confusion matrix (C3b, n=29).</b></sub></p>
+
+All errors sit on the MCI/Dementia boundary (2 of 6 MCI subjects predicted as Dementia); CN and Dementia are perfectly classified.
 
 ---
 
