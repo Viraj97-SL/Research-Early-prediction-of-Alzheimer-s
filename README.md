@@ -36,52 +36,34 @@ Metrics from held-out test (n=29); every row verified by reloading the saved mod
 
 ## Figures
 
-<table>
-<tr>
-<td width="50%">
-
 ![Tri-modal architecture](figures/architecture_diagram.png)
-**Fig. 1 — Architecture.** MRI → 3D Swin Transformer; clinical and biomarker sequences → separate LSTMs; all three feed an audited, LayerNorm + softmax gated-fusion head.
-
-</td>
-<td width="50%">
+**Fig. 1 — Architecture.** MRI → 3D Swin Transformer (SwinViT, frozen or fine-tuned); clinical and biomarker sequences → separate 2-layer LSTMs. Each 128-d modality feature is LayerNorm'd, then combined by a temperature-scaled softmax gate, `w = softmax(g([f_I, f_C, f_B]) / τ)`. The gate weights `w` are the primary object of the auditing protocol (bottom right).
 
 ![Class distribution](figures/class_distribution.png)
-**Fig. 2 — Class distribution (N=187).** Dementia is the majority class (50.3%); MCI the smallest (23.0%) — motivates the imbalance-aware metrics used throughout.
+**Fig. 2 — Class distribution (N=187).** Dementia is the majority class (50.3%, n=94); MCI the smallest (23.0%, n=43) — motivates the imbalance-aware metrics (MCC, G-mean) used throughout.
 
-</td>
-</tr>
-<tr>
-<td width="50%">
+![MRI preprocessing, before vs. after](figures/mri_preprocessing_before_after.png)
+**Fig. 3 — Preprocessing rebuild.** Original pipeline (top: whole-head volumes, min-max scaled) vs. rebuilt pipeline (bottom: skull-stripped with HD-BET, affine-registered to MNI, brain-masked z-scored), shown in all three planes.
+
+![Cross-subject intensity consistency](figures/preprocessing_intensity_consistency.png)
+**Fig. 3b — Why the rebuild matters.** Bright-voxel fraction per subject: wildly inconsistent under the original pipeline (0.20–1.00) vs. tightly harmonised under the rebuilt one — the input instability that fed the imaging encoder's collapse.
 
 ![Initial audit panel](figures/initial_audit_panel.png)
-**Fig. 3 — Initial audit.** Baseline C1's fusion gate assigns MRI a weight of 0.000, and zeroing the MRI input changes no test metric — a silent, complete collapse invisible to accuracy alone. C3b (rebuilt preprocessing) recovers a non-zero gate weight (0.141) and genuine ablation sensitivity.
+**Fig. 4 — Initial audit (baseline C1).** (a) Learned gate weights: MRI 0.000, Clinical 1.000, Biomarker 0.000 — the imaging branch receives no weight at all. (b) Leave-one-modality-out ablation: zeroing MRI leaves accuracy unchanged (0.897 → 0.897); zeroing Clinical collapses it (→ 0.207). The imaging branch is present but functionally inert, invisible to accuracy alone.
 
-</td>
-<td width="50%">
-
-![Condition comparison](figures/condition_comparison.png)
-**Fig. 4 — Eight-condition comparison.** Test accuracy (bars) against mean MRI gate weight (red line) across every condition. C3b is the accuracy and audit-both-positive optimum; several high-accuracy bars (C1, C2, C5-CV, C6) sit on an inert or near-inert imaging branch.
-
-</td>
-</tr>
-<tr>
-<td width="50%">
+![Preprocessing recovery](figures/preprocessing_recovery.png)
+**Fig. 5 — Recovery.** (a) Image-feature similarity SD: 0.0007 (old preprocessing, collapsed/near-constant features) vs. 0.0440 (rebuilt, de-collapsed). (b) Resulting MRI gate weight rises from 0.105 to 0.141 — the rebuilt pipeline is what restores a genuinely contributing imaging branch.
 
 ![Probe vs gate dissociation](figures/probe_vs_gate_dissociation.png)
-**Fig. 5 — Probe-vs-gate dissociation.** In-domain self-supervision (MAE, VICReg) learns more class-discriminative image features (linear-probe accuracy, y-axis) than large-scale CT transfer, yet the fusion gate does not weight those features more (x-axis) — informative features that the fusion model does not exploit.
+**Fig. 6 — Probe-vs-gate dissociation.** In-domain self-supervision (C4-MAE: probe 0.41, C4-VICReg: probe 0.34) learns more class-discriminative image features than CT transfer (C2/C3b: probe 0.28, both above chance at 0.33) — yet the fusion gate weights transfer features *more* (0.11–0.14) than the richer in-domain features (0.05). Representation quality and fused contribution dissociate.
 
-</td>
-<td width="50%">
+![Eight-condition comparison](figures/condition_comparison.png)
+**Fig. 7 — Full condition sweep.** (a) MRI gate weight and (b) full-model accuracy across all 12 conditions; (c) accuracy drop when MRI is zeroed (the direct measure of imaging contribution) and (d) image-only linear-probe accuracy. C3b (green) is the only condition that is simultaneously high-accuracy, audit-positive, and CV-stable; C1 (grey) is the inert baseline; red bars mark conditions with an imaging-inert or unstable gate.
 
 ![Confusion matrix](figures/confusion_matrix.png)
-**Fig. 6 — Confusion matrix (C3b, n=29).** All errors sit on the MCI/Dementia boundary (2 of 6 MCI subjects predicted as Dementia); CN and Dementia are perfectly classified.
+**Fig. 8 — Confusion matrix (C3b, n=29).** All errors sit on the MCI/Dementia boundary (2 of 6 MCI subjects predicted as Dementia); CN and Dementia are perfectly classified.
 
-</td>
-</tr>
-</table>
-
-> **Pending:** MRI preprocessing before/after slices (original whole-head volumes vs. skull-stripped, MNI-registered, brain-masked outputs) are not yet included — these require exporting real (de-identified, ADNI-derived) scan slices, which is being sourced separately. The six figures above are all generated directly from [`results/verified_metrics.json`](results/verified_metrics.json) and the paper text; none contain patient imagery.
+All figures are generated directly from [`results/verified_metrics.json`](results/verified_metrics.json) and the study's own diagnostic outputs. Fig. 3 shows de-identified, ADNI-derived MRI slices used solely to illustrate the preprocessing pipeline; no raw scan volumes, patient identifiers, or model weights are included in this repository.
 
 ---
 
@@ -135,7 +117,7 @@ The directories below are the original MSc project deliverables. They are kept a
 - `Proposed Tri Modal Framework with Advanced Gated Fusion/` — first tri-modal framework iteration.
 - `Proposed framework of Self Supervised Swin Transformer and LSTM with Cross Modal Attention/` — cross-modal attention variant.
 - `Tri Modal Initiative with MAE pretraining and Gated Fusion/` — MAE-pretraining variant that Phase 2's recovery work builds on.
-- `EDA_of_ADNI_Clinical_data.ipynb` — original clinical-data exploratory analysis.
+- `notebooks/EDA_of_ADNI_Clinical_data.ipynb` — original clinical-data exploratory analysis.
 
 > **Known issue, flagged for a future cleanup pass:** some Phase 1 scripts still contain generic `/content/drive/...` Colab path placeholders from initial development (no email addresses, credentials, or patient data were found in a repo-wide scan). Sanitizing these requires rewriting already-published git history and is intentionally out of scope for this Phase 2 branch — it needs a separate, explicit sign-off before any history rewrite.
 
